@@ -771,7 +771,8 @@ public class CirSim extends Frame
 	int badnodes = 0;
 	// find bad connections, nodes not connected to other elements which
 	// intersect other elements' bounding boxes
-	for (i = 0; i != nodeList.size(); i++) {
+        int nls = nodeList != null ? nodeList.size() : 0;
+        for (i = 0; i != nls; i++) {
 	    CircuitNode cn = getCircuitNode(i);
 	    if (!cn.internal && cn.links.size() == 1) {
 		int bb = 0, j;
@@ -871,7 +872,7 @@ public class CirSim extends Frame
 
 	realg.drawImage(dbimage, 0, 0, this);
 	if (!stoppedCheck.getState() && circuitMatrix != null) {
-	    // Limit to 50 fps (thanks to Jürgen Klötzer for this)
+	    // Limit to 50 fps (thanks to Jï¿½rgen Klï¿½tzer for this)
 	    long delay = 1000/50 - (System.currentTimeMillis() - lastFrameTime);
 	    //realg.drawString("delay: " + delay,  10, 90);
 	    if (delay > 0) {
@@ -2078,8 +2079,9 @@ public class CirSim extends Frame
 	try {
 	    if (applet != null)
 		return applet.getCodeBase();
-	    File f = new File(".");
-	    return new URL("file:" + f.getCanonicalPath() + "/");
+            return getClass().getResource("/");
+            //File f = new File(".");
+	    //return new URL("file:" + f.getCanonicalPath() + "/");
 	} catch (Exception e) {
 	    e.printStackTrace();
 	    return null;
@@ -2134,7 +2136,9 @@ public class CirSim extends Frame
 		}
 		p += l;
 	    }
-	} catch (Exception e) {
+        } catch (java.io.FileNotFoundException e) {
+            stop("Can't read setuplist.txt!", null);
+        } catch (Exception e) {
 	    e.printStackTrace();
 	    stop("Can't read setuplist.txt!", null);
 	}
