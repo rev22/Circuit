@@ -37,6 +37,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.io.File;
+import java.net.MalformedURLException;
 import java.util.Random;
 import java.net.URL;
 import java.io.BufferedOutputStream;
@@ -2092,19 +2093,21 @@ public class CirSim extends Frame
     }
     
     void doLoad() {
-        FileDialog f = new FileDialog(this, "Load Circuit File ...");
-        f.setFilenameFilter(new FilenameFilter() {
+        FileDialog fd = new FileDialog(this, "Load Circuit File ...");
+        fd.setFilenameFilter(new FilenameFilter() {
             public boolean accept(File dir, String name) {
                 return name.toLowerCase().endsWith(".txt") || name.toLowerCase().endsWith(".circuit");
             }
         });
-        f.setVisible(true);
-        String nameName = f.getFile();
+        fd.setVisible(true);
+        String nameName = fd.getFile();
         if(nameName != null){
-            File file = new File(f.getFile());
+            File file = new File(new File(fd.getDirectory()),fd.getFile());
             if (file.exists()) {
-                readSetupFile(file.getAbsolutePath(),file.getName());
-                      currentFile = file;
+                readSetup(file);
+                currentFile = file;
+            } else {
+                JOptionPane.showMessageDialog(getComponent(0),(Object)("File Not Found: "+file));
             }
         }
     }
@@ -2213,17 +2216,18 @@ public class CirSim extends Frame
 	return ba;
     }
 
-    URL getCodeBase() {
-	try {
-	    if (applet != null)
-		return applet.getCodeBase();
-            return getClass().getResource("/");
-            //File f = new File(".");
-	    //return new URL("file:" + f.getCanonicalPath() + "/");
-	} catch (Exception e) {
-	    e.printStackTrace();
-	    return null;
-	}
+    URL getResource(String resource) throws MalformedURLException {
+        File file = new File(resource);
+        if (file.exists()) {
+            return file.toURL();
+        }
+
+        URL url = getClass().getResource("/"+resource);
+        if (url != null) {
+            return url;
+        }
+        
+        return null;
     }
     
     void getSetupList(Menu menu, boolean retry) {
@@ -2231,7 +2235,7 @@ public class CirSim extends Frame
 	int stackptr = 0;
 	stack[stackptr++] = menu;
 	try {
-	    URL url = new URL(getCodeBase() + "setuplist.txt");
+	    URL url = getResource("setuplist.txt");
 	    ByteArrayOutputStream ba = readUrlData(url);
 	    byte b[] = ba.toByteArray();
 	    int len = ba.size();
@@ -2290,12 +2294,26 @@ public class CirSim extends Frame
 	readSetup(text.getBytes(), text.length(), retain);
 	titleLabel.setText("untitled");
     }
+    
+    void readSetup(File file) {
+        t = 0;
+        System.out.println(file);
+        try {
+            URL url = file.toURL();
+            ByteArrayOutputStream ba = readUrlData(url);
+	    readSetup(ba.toByteArray(), ba.size(), false);
+        } catch (Exception e) {
+            e.printStackTrace();
+            stop("Unable to read " + file + "!", null);
+        }
+        titleLabel.setText(file.getName());
+    }
 
     void readSetupFile(String str, String title) {
 	t = 0;
 	System.out.println(str);
 	try {
-	    URL url = new URL(getCodeBase() + "circuits/" + str);
+	    URL url = getResource("circuits/" + str);
 	    ByteArrayOutputStream ba = readUrlData(url);
 	    readSetup(ba.toByteArray(), ba.size(), false);
 	} catch (Exception e) {
