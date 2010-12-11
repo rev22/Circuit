@@ -2,26 +2,63 @@
 
 // For information about the theory behind this, see Electronic Circuit & System Simulation Methods by Pillage
 
-import java.io.InputStream;
-import java.awt.*;
-import java.awt.image.*;
-import java.applet.Applet;
-import java.util.Vector;
+import java.awt.Button;
+import java.awt.Checkbox;
+import java.awt.CheckboxMenuItem;
+import java.awt.Color;
+import java.awt.Container;
+import java.awt.Dimension;
+import java.awt.Event;
+import java.awt.FileDialog;
+import java.awt.Font;
+import java.awt.Frame;
+import java.awt.Graphics;
+import java.awt.Image;
+import java.awt.Label;
+import java.awt.Menu;
+import java.awt.MenuBar;
+import java.awt.MenuItem;
+import java.awt.MenuShortcut;
+import java.awt.Point;
+import java.awt.PopupMenu;
+import java.awt.Rectangle;
+import java.awt.Scrollbar;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.AdjustmentEvent;
+import java.awt.event.AdjustmentListener;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
 import java.io.File;
 import java.util.Random;
-import java.util.Arrays;
-import java.lang.Math;
 import java.net.URL;
-import java.awt.event.*;
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.FilterInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.util.StringTokenizer;
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.nio.charset.Charset;
+import java.util.Vector;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.JOptionPane;
 
 public class CirSim extends Frame
   implements ComponentListener, ActionListener, AdjustmentListener,
@@ -44,6 +81,7 @@ public class CirSim extends Frame
     Label titleLabel;
     Button resetButton;
     Button dumpMatrixButton;
+    MenuItem loadItem, saveItem, saveAsItem;
     MenuItem exportItem, exportLinkItem, importItem, exitItem, undoItem, redoItem,
 	cutItem, copyItem, pasteItem, selectAllItem, optionsItem;
     Menu optionsMenu;
@@ -150,6 +188,7 @@ public class CirSim extends Frame
     Rectangle circuitArea;
     int circuitBottom;
     Vector undoStack, redoStack;
+    File currentFile;
 
     int getrand(int x) {
 	int q = random.nextInt();
@@ -257,6 +296,13 @@ public class CirSim extends Frame
 	    mb.add(m);
 	else
 	    mainMenu.add(m);
+        
+        m.add(loadItem = getMenuItem("Open ..."));
+        loadItem.setShortcut(new MenuShortcut(KeyEvent.VK_O,false));
+        m.add(saveItem = getMenuItem("Save"));
+        saveItem.setShortcut(new MenuShortcut(KeyEvent.VK_S,false));
+        m.add(saveAsItem = getMenuItem("Save As ..."));
+	
 	m.add(importItem = getMenuItem("Import"));
 	m.add(exportItem = getMenuItem("Export"));
 	m.add(exportLinkItem = getMenuItem("Export Link"));
@@ -1485,6 +1531,28 @@ public class CirSim extends Frame
 		circuitBottom = bottom;
 	}
     }
+
+    private String readFully(File file) {
+        FileInputStream fin = null;
+        try {
+            fin = new FileInputStream(file);
+            BufferedReader br = new BufferedReader(new InputStreamReader(fin, "UTF-8"));
+            StringBuilder sb = new StringBuilder();
+            for(int n = br.read(); n >= 0; n = br.read()) {
+                sb.append((char)n);
+            }
+            return sb.toString();
+        } catch (IOException ex) {
+            Logger.getLogger(CirSim.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            try {
+                fin.close();
+            } catch (IOException ex) {
+                Logger.getLogger(CirSim.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        return null;
+    }
     
     class FindPathInfo {
 	static final int INDUCT  = 1;
@@ -1880,6 +1948,12 @@ public class CirSim extends Frame
 	}
 	if (e.getSource() == dumpMatrixButton)
 	    dumpMatrix = true;
+	if (e.getSource() == loadItem)
+	    doLoad();
+	if (e.getSource() == saveItem)
+	    doSave();
+	if (e.getSource() == saveAsItem)
+	    doSaveAs();
 	if (e.getSource() == exportItem)
 	    doImport(false, false);
 	if (e.getSource() == optionsItem)
@@ -2016,7 +2090,71 @@ public class CirSim extends Frame
 	editDialog = new EditDialog(eable, this);
 	editDialog.show();
     }
+    
+    void doLoad() {
+        FileDialog f = new FileDialog(this, "Load Circuit File ...");
+        f.setFilenameFilter(new FilenameFilter() {
+            public boolean accept(File dir, String name) {
+                return name.toLowerCase().endsWith(".txt") || name.toLowerCase().endsWith(".circuit");
+            }
+        });
+        f.setVisible(true);
+        String nameName = f.getFile();
+        if(nameName != null){
+            File file = new File(f.getFile());
+            if (file.exists()) {
+                readSetupFile(file.getAbsolutePath(),file.getName());
+                      currentFile = file;
+            }
+        }
+    }
+    
+    void doSave() {
+        FileOutputStream fos = null;
+        try {
+            if (currentFile == null) {
+                doSaveAs();
+                return;
+            }
+            String curcuit = dumpCircuit();
+            fos = new FileOutputStream(currentFile);
+            Writer w = new OutputStreamWriter(new BufferedOutputStream(fos),
+                    Charset.forName("UTF-8"));
+            w.write(curcuit);
+            w.close();
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Exception", 
+                    JOptionPane.ERROR_MESSAGE);
+            Logger.getLogger(CirSim.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            try {
+                fos.close();
+            } catch (IOException ex) {
+                Logger.getLogger(CirSim.class.getName()).log(Level.SEVERE, null,
+                        ex);
+            }
+        }
+    }
 
+    void doSaveAs() {
+        FileDialog fd = new FileDialog(this,"Save As ...");
+        fd.setMode(FileDialog.SAVE);
+        fd.setVisible(true);
+        String dir = fd.getDirectory();
+        String f = fd.getFile();
+        
+        if (f != null && dir != null) {
+            if (!f.endsWith(".circuit")) {
+                f += ".circuit";
+            }
+            
+            currentFile = new File(new File(dir), f);
+            doSave();
+        } else {
+            JOptionPane.showMessageDialog(this, "File not saved", "Warning", JOptionPane.WARNING_MESSAGE);   
+        }
+    }
+    
     void doImport(boolean imp, boolean url) {
 	if (impDialog != null) {
 	    requestFocus();
