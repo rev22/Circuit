@@ -10,6 +10,7 @@
 
     <name>Circuit</name>
     <url>http://maven.apache.org</url>
+    
     <build>
         <plugins>
             <plugin>
@@ -20,7 +21,7 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>Circuit</mainClass>
+                            <mainClass>${exec.mainClass}</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -34,11 +35,34 @@
                     <target>1.5</target>
                 </configuration>
             </plugin>
+            
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>osxappbundle-maven-plugin</artifactId>
+                <version>1.0-alpha-2</version>
+                <configuration>
+                    <mainClass>${exec.mainClass}</mainClass>
+                    <iconFile>${basedir}/src/main/app-resources/circuit.icns</iconFile>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>bundle</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <!--
+                 -->
+            </plugin>
         </plugins>
     </build>
+    
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <exec.mainClass>Circuit</exec.mainClass>
     </properties>
+    
 
     <dependencies>
         <dependency>
