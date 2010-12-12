@@ -3,7 +3,7 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.falstad</groupId>
+    <groupId>com.falstad.xylifyx</groupId>
     <artifactId>circuit</artifactId>
     <version>1.5n</version>
     <packaging>jar</packaging>
@@ -36,27 +36,40 @@
                 </configuration>
             </plugin>
             
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>osxappbundle-maven-plugin</artifactId>
-                <version>1.0-alpha-2</version>
-                <configuration>
-                    <mainClass>${exec.mainClass}</mainClass>
-                    <iconFile>${basedir}/src/main/app-resources/circuit.icns</iconFile>
-                </configuration>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>bundle</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <!--
-                 -->
-            </plugin>
         </plugins>
     </build>
+    
+    <profiles>
+        <profile>
+            <id>mac</id>
+            <activation>
+                <os>
+                    <family>mac</family>    
+                </os>    
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>osxappbundle-maven-plugin</artifactId>
+                        <version>1.0-alpha-2</version>
+                        <configuration>
+                            <mainClass>${exec.mainClass}</mainClass>
+                            <iconFile>${basedir}/src/main/app-resources/circuit.icns</iconFile>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>bundle</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
     
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
