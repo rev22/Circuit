@@ -2,11 +2,13 @@
 
 // For information about the theory behind this, see Electronic Circuit & System Simulation Methods by Pillage
 
+import java.awt.BorderLayout;
 import java.awt.Button;
 import java.awt.Checkbox;
 import java.awt.CheckboxMenuItem;
 import java.awt.Color;
 import java.awt.Container;
+import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.Event;
 import java.awt.FileDialog;
@@ -19,6 +21,7 @@ import java.awt.Menu;
 import java.awt.MenuBar;
 import java.awt.MenuItem;
 import java.awt.MenuShortcut;
+import java.awt.Panel;
 import java.awt.Point;
 import java.awt.PopupMenu;
 import java.awt.Rectangle;
@@ -59,7 +62,7 @@ import java.nio.charset.Charset;
 import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.swing.JOptionPane;
+import javax.swing.BoxLayout;
 
 public class CirSim extends Frame
   implements ComponentListener, ActionListener, AdjustmentListener,
@@ -82,7 +85,7 @@ public class CirSim extends Frame
     Label titleLabel;
     Button resetButton;
     Button dumpMatrixButton;
-    MenuItem loadItem, saveItem, saveAsItem;
+    MenuItem newItem, loadItem, saveItem, saveAsItem;
     MenuItem exportItem, exportLinkItem, importItem, exitItem, undoItem, redoItem,
 	cutItem, copyItem, pasteItem, selectAllItem, optionsItem;
     Menu optionsMenu;
@@ -298,12 +301,13 @@ public class CirSim extends Frame
 	else
 	    mainMenu.add(m);
         
+        m.add(newItem = getMenuItem("New"));
+        newItem.setShortcut(new MenuShortcut(KeyEvent.VK_N,false));
         m.add(loadItem = getMenuItem("Open ..."));
         loadItem.setShortcut(new MenuShortcut(KeyEvent.VK_O,false));
         m.add(saveItem = getMenuItem("Save"));
         saveItem.setShortcut(new MenuShortcut(KeyEvent.VK_S,false));
         m.add(saveAsItem = getMenuItem("Save As ..."));
-	
 	m.add(importItem = getMenuItem("Import"));
 	m.add(exportItem = getMenuItem("Export"));
 	m.add(exportLinkItem = getMenuItem("Export Link"));
@@ -1554,6 +1558,17 @@ public class CirSim extends Frame
         }
         return null;
     }
+
+    private void showMessageDialog(Frame frame, String message, String title) {
+        MessageDialog d = new MessageDialog(frame,message,title);
+        d.pack();
+        int w=d.getWidth(),h=d.getHeight();
+        w = Math.max(400, w);
+        h = Math.max(200,h);
+        d.setSize(w,h);
+        d.setLocationByPlatform(true);
+        d.setVisible(true);
+    }
     
     class FindPathInfo {
 	static final int INDUCT  = 1;
@@ -1949,6 +1964,8 @@ public class CirSim extends Frame
 	}
 	if (e.getSource() == dumpMatrixButton)
 	    dumpMatrix = true;
+	if (e.getSource() == newItem)
+	    doNew();
 	if (e.getSource() == loadItem)
 	    doLoad();
 	if (e.getSource() == saveItem)
@@ -1989,8 +2006,9 @@ public class CirSim extends Frame
 	    stackAll();
 	if (ac.compareTo("unstackAll") == 0)
 	    unstackAll();
-	if (e.getSource() == elmEditMenuItem)
-	    doEdit(menuElm);
+	if (e.getSource() == elmEditMenuItem) {
+            doEdit((Editable) menuElm);
+        }
 	if (ac.compareTo("Delete") == 0) {
 	    if (e.getSource() != elmDeleteMenuItem)
 		menuElm = null;
@@ -2092,6 +2110,11 @@ public class CirSim extends Frame
 	editDialog.show();
     }
     
+    void doNew() {
+        readSetupFile("blank.txt", "Untitled");
+        currentFile = null;
+    }
+    
     void doLoad() {
         FileDialog fd = new FileDialog(this, "Load Circuit File ...");
         fd.setFilenameFilter(new FilenameFilter() {
@@ -2107,7 +2130,7 @@ public class CirSim extends Frame
                 readSetup(file);
                 currentFile = file;
             } else {
-                JOptionPane.showMessageDialog(getComponent(0),(Object)("File Not Found: "+file));
+                showMessageDialog(this,"File Not Found: "+file, "Error");
             }
         }
     }
@@ -2126,12 +2149,12 @@ public class CirSim extends Frame
             w.write(curcuit);
             w.close();
         } catch (IOException ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(), "Exception", 
-                    JOptionPane.ERROR_MESSAGE);
+            showMessageDialog(this, ex.getMessage(), "Exception");
             Logger.getLogger(CirSim.class.getName()).log(Level.SEVERE, null, ex);
         } finally {
             try {
-                fos.close();
+                if (fos != null)
+                    fos.close();
             } catch (IOException ex) {
                 Logger.getLogger(CirSim.class.getName()).log(Level.SEVERE, null,
                         ex);
@@ -2154,7 +2177,7 @@ public class CirSim extends Frame
             currentFile = new File(new File(dir), f);
             doSave();
         } else {
-            JOptionPane.showMessageDialog(this, "File not saved", "Warning", JOptionPane.WARNING_MESSAGE);   
+            showMessageDialog(this, "File not saved", "Warning");   
         }
     }
     
