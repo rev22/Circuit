@@ -43,6 +43,11 @@ public class MessageDialog extends java.awt.Dialog {
         });
 
         button1.setLabel("OK");
+        button1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                button1ActionPerformed(evt);
+            }
+        });
         panel.add(button1);
 
         add(panel, java.awt.BorderLayout.SOUTH);
@@ -63,6 +68,10 @@ public class MessageDialog extends java.awt.Dialog {
         setVisible(false);
         dispose();
     }//GEN-LAST:event_closeDialog
+
+    private void button1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_button1ActionPerformed
+        dispose();
+    }//GEN-LAST:event_button1ActionPerformed
 
     /**
     * @param args the command line arguments
