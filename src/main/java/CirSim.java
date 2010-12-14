@@ -193,6 +193,7 @@ public class CirSim extends Frame
     int circuitBottom;
     Vector undoStack, redoStack;
     File currentFile;
+    String loadedCircuit;
 
     int getrand(int x) {
 	int q = random.nextInt();
@@ -725,10 +726,17 @@ public class CirSim extends Frame
 
     void destroyFrame() {
         if (currentFile != null) {
-            boolean ok = showQuestionDialog(this, "Do you want to save the changes?", "Save?");
+            String circuit = dumpCircuit();
+            String loadedCircuit = this.loadedCircuit;
+            
+            System.out.println(circuit+"\n"+loadedCircuit);
+            
+            if (circuit.equals(loadedCircuit) == false) {
+                boolean ok = showQuestionDialog(this, "Do you want to save the changes?", "Save?");
 
-            if (ok) {
-                doSave();
+                if (ok) {
+                    doSave();
+                }
             }
         }
         
@@ -2480,7 +2488,10 @@ public class CirSim extends Frame
 	if (!retain)
 	    handleResize(); // for scopes
 	needAnalyze();
+        
+        loadedCircuit = dumpCircuit();
     }
+    
 
     void readHint(StringTokenizer st) {
 	hintType  = new Integer(st.nextToken()).intValue();
