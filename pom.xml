@@ -13,8 +13,8 @@
     
         
     <scm>
-        <connection>scm:git:[fetch=]https://github.com/xylifyx/Circuit.git[push=]https://github.com/xylifyx/Circuit.git</connection>
-        <developerConnection>scm:git:[fetch=]https://github.com/xylifyx/Circuit.git[push=]https://github.com/xylifyx/Circuit.git</developerConnection>
+        <connection>scm:git:https://github.com/xylifyx/Circuit.git</connection>
+        <developerConnection>scm:git:https://github.com/xylifyx/Circuit.git</developerConnection>
         <url>https://github.com/xylifyx/Circuit</url>
     </scm>
 
