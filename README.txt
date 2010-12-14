@@ -14,5 +14,26 @@ are load and save of circuit files.
 
 See http://www.falstad.com/circuit/ for the original.
 
+HOWTO Build
+===========
+
+Netbeans, works out of the box
+
+Eclipse
+
+    install maven and run the following command
+    $ mvn eclipse:eclipse
+    
+in the project directory
+    import circuit as an existing project into eclipse
+    run the class Circuit
+
+If you are neither using Netbeans or Eclipse, you should check the documentation
+
+Package
+    mvn assembly:assembly
+
+If you build it on a mac, it will create a mac app bundle as well.
+
 Erik Martino <erik.martino@gmail.com>
 
