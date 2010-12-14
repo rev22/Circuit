@@ -308,12 +308,14 @@ public class CirSim extends Frame
         m.add(saveItem = getMenuItem("Save"));
         saveItem.setShortcut(new MenuShortcut(KeyEvent.VK_S,false));
         m.add(saveAsItem = getMenuItem("Save As ..."));
+	m.addSeparator();
 	m.add(importItem = getMenuItem("Import"));
 	m.add(exportItem = getMenuItem("Export"));
 	m.add(exportLinkItem = getMenuItem("Export Link"));
 	m.addSeparator();
 	m.add(exitItem   = getMenuItem("Exit"));
-
+        saveItem.setShortcut(new MenuShortcut(KeyEvent.VK_Q,false));
+        
 	m = new Menu("Edit");
 	m.add(undoItem = getMenuItem("Undo"));
 	undoItem.setShortcut(new MenuShortcut(KeyEvent.VK_Z));
@@ -722,6 +724,14 @@ public class CirSim extends Frame
     }
 
     void destroyFrame() {
+        if (currentFile != null) {
+            boolean ok = showQuestionDialog(this, "Do you want to save the changes?", "Save?");
+
+            if (ok) {
+                doSave();
+            }
+        }
+        
 	if (applet == null)
 	    dispose();
 	else
@@ -1559,7 +1569,7 @@ public class CirSim extends Frame
         return null;
     }
 
-    private void showMessageDialog(Frame frame, String message, String title) {
+    void showMessageDialog(Frame frame, String message, String title) {
         MessageDialog d = new MessageDialog(frame,message,title);
         d.pack();
         int w=d.getWidth(),h=d.getHeight();
@@ -1569,6 +1579,20 @@ public class CirSim extends Frame
         d.setLocationByPlatform(true);
         d.setVisible(true);
     }
+    
+    boolean showQuestionDialog(Frame frame, String message, String title) {
+        QuestionDialog d = new QuestionDialog(frame,message,title);
+        d.pack();
+        int w=d.getWidth(),h=d.getHeight();
+        w = Math.max(400, w);
+        h = Math.max(200,h);
+        d.setSize(w,h);
+        d.setLocationByPlatform(true);
+        d.setVisible(true);
+        
+        return d.action.equals("OK");
+    }
+    
     
     class FindPathInfo {
 	static final int INDUCT  = 1;
@@ -2128,7 +2152,6 @@ public class CirSim extends Frame
             File file = new File(new File(fd.getDirectory()),fd.getFile());
             if (file.exists()) {
                 readSetup(file);
-                currentFile = file;
             } else {
                 showMessageDialog(this,"File Not Found: "+file, "Error");
             }
@@ -2175,6 +2198,7 @@ public class CirSim extends Frame
             }
             
             currentFile = new File(new File(dir), f);
+            titleLabel.setText(currentFile.getName());
             doSave();
         } else {
             showMessageDialog(this, "File not saved", "Warning");   
@@ -2325,11 +2349,12 @@ public class CirSim extends Frame
             URL url = file.toURL();
             ByteArrayOutputStream ba = readUrlData(url);
 	    readSetup(ba.toByteArray(), ba.size(), false);
+            currentFile = file;
+            titleLabel.setText(file.getName());
         } catch (Exception e) {
             e.printStackTrace();
             stop("Unable to read " + file + "!", null);
         }
-        titleLabel.setText(file.getName());
     }
 
     void readSetupFile(String str, String title) {

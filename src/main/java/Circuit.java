@@ -1,23 +1,13 @@
 // Circuit.java (c) 2005,2008 by Paul Falstad, www.falstad.com
 
-import java.io.InputStream;
 import java.awt.*;
-import java.awt.image.*;
 import java.applet.Applet;
-import java.util.Vector;
-import java.io.File;
-import java.util.Random;
-import java.util.Arrays;
-import java.lang.Math;
-import java.net.URL;
 import java.awt.event.*;
-import java.io.FilterInputStream;
-import java.io.ByteArrayOutputStream;
-import java.util.StringTokenizer;
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
+import java.io.File;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.prefs.BackingStoreException;
+import java.util.prefs.Preferences;
 
 public class Circuit extends Applet implements ComponentListener {
     static CirSim ogf;
@@ -34,7 +24,40 @@ public class Circuit extends Applet implements ComponentListener {
 
     public static void main(String args[]) {
 	ogf = new CirSim(null);
+        
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            public void run() {
+                try {
+                    Preferences prefs = Preferences.userNodeForPackage(Circuit.class);
+                    String currentFilename=ogf.currentFile.getAbsolutePath();
+                    prefs.put("currentFile", currentFilename);
+                    prefs.flush();
+                } catch (BackingStoreException ex) {
+                    ogf.showMessageDialog(ogf,ex.getMessage(),"Error");
+                }
+            }
+        });
+        
+        MacUtil.init();
 	ogf.init();
+        
+        EventQueue.invokeLater(new Runnable()  {
+
+            public void run() {
+                try {
+                Preferences prefs = Preferences.userNodeForPackage(Circuit.class);
+                String currentFilename = prefs.get("currentFile", null);
+
+                if (currentFilename != null) {
+                    ogf.readSetup(new File(currentFilename));
+                }
+                } catch (Exception ex) {
+                    ogf.showMessageDialog(ogf,ex.getMessage(),"Error");
+                }
+            }
+        });
+        
+        
     }
     
     void showFrame() {

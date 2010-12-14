@@ -70,6 +70,7 @@ public class MessageDialog extends java.awt.Dialog {
     }//GEN-LAST:event_closeDialog
 
     private void button1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_button1ActionPerformed
+        setVisible(false);
         dispose();
     }//GEN-LAST:event_button1ActionPerformed
 
