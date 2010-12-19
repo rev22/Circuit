@@ -2,13 +2,11 @@
 
 // For information about the theory behind this, see Electronic Circuit & System Simulation Methods by Pillage
 
-import java.awt.BorderLayout;
 import java.awt.Button;
 import java.awt.Checkbox;
 import java.awt.CheckboxMenuItem;
 import java.awt.Color;
 import java.awt.Container;
-import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.Event;
 import java.awt.FileDialog;
@@ -21,7 +19,6 @@ import java.awt.Menu;
 import java.awt.MenuBar;
 import java.awt.MenuItem;
 import java.awt.MenuShortcut;
-import java.awt.Panel;
 import java.awt.Point;
 import java.awt.PopupMenu;
 import java.awt.Rectangle;
@@ -62,7 +59,7 @@ import java.nio.charset.Charset;
 import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.swing.BoxLayout;
+import javax.swing.JFrame;
 
 public class CirSim extends Frame
   implements ComponentListener, ActionListener, AdjustmentListener,
@@ -315,7 +312,7 @@ public class CirSim extends Frame
 	m.add(exportLinkItem = getMenuItem("Export Link"));
 	m.addSeparator();
 	m.add(exitItem   = getMenuItem("Exit"));
-        saveItem.setShortcut(new MenuShortcut(KeyEvent.VK_Q,false));
+        exitItem.setShortcut(new MenuShortcut(KeyEvent.VK_Q,false));
         
 	m = new Menu("Edit");
 	m.add(undoItem = getMenuItem("Undo"));
