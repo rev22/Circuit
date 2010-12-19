@@ -71,6 +71,7 @@
                         <version>1.0-alpha-2</version>
                         <configuration>
                             <mainClass>${exec.mainClass}</mainClass>
+                            <dictionaryFile>${basedir}/src/main/app-resources/Info.plist</dictionaryFile>
                             <iconFile>${basedir}/src/main/app-resources/circuit.icns</iconFile>
                         </configuration>
                         <executions>
