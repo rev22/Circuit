@@ -4,7 +4,7 @@
 
     <groupId>com.falstad.xylifyx</groupId>
     <artifactId>circuit</artifactId>
-    <version>1.5n.2-SNAPSHOT</version>
+    <version>1.5n.2</version>
     <packaging>jar</packaging>
 
     <name>Circuit</name>
