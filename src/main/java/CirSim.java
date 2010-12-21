@@ -189,7 +189,7 @@ public class CirSim extends Frame
     Rectangle circuitArea;
     int circuitBottom;
     Vector undoStack, redoStack;
-    File currentFile;
+    String currentFile;
     String loadedCircuit;
 
     int getrand(int x) {
@@ -722,7 +722,7 @@ public class CirSim extends Frame
     }
 
     void destroyFrame() {
-        if (currentFile != null) {
+        if (currentFile != null && new File(currentFile).isAbsolute()) {
             String circuit = dumpCircuit();
             String loadedCircuit = this.loadedCircuit;
             
@@ -2141,7 +2141,6 @@ public class CirSim extends Frame
     
     void doNew() {
         readSetupFile("blank.txt", "Untitled");
-        currentFile = null;
     }
     
     void doLoad() {
@@ -2156,7 +2155,7 @@ public class CirSim extends Frame
         if(nameName != null){
             File file = new File(new File(fd.getDirectory()),fd.getFile());
             if (file.exists()) {
-                readSetup(file);
+                readSetupFile(file);
             } else {
                 showMessageDialog(this,"File Not Found: "+file, "Error");
             }
@@ -2202,8 +2201,10 @@ public class CirSim extends Frame
                 f += ".circuit";
             }
             
-            currentFile = new File(new File(dir), f);
-            titleLabel.setText(currentFile.getName());
+            currentFile = new File(new File(dir), f).getAbsolutePath();
+            titleLabel.setText(new File(currentFile).getName());
+            Circuit.saveCurrentFile();
+            
             doSave();
         } else {
             showMessageDialog(this, "File not saved", "Warning");   
@@ -2344,38 +2345,58 @@ public class CirSim extends Frame
     
     void readSetup(String text, boolean retain) {
 	readSetup(text.getBytes(), text.length(), retain);
-	titleLabel.setText("untitled");
+        currentFile = null;
+	titleLabel.setText("Untitled");
     }
     
-    void readSetup(File file) {
+    void readSetupFile(File file) {
         t = 0;
         System.out.println(file);
         try {
             URL url = file.toURL();
             ByteArrayOutputStream ba = readUrlData(url);
 	    readSetup(ba.toByteArray(), ba.size(), false);
-            currentFile = file;
+            currentFile = file.getAbsolutePath();
             titleLabel.setText(file.getName());
+            Circuit.saveCurrentFile();
         } catch (Exception e) {
             e.printStackTrace();
             stop("Unable to read " + file + "!", null);
         }
     }
+    
+    void readSetupFile(String file, String title) {
+        URL url;
+        File f = new File(file);
+        if (f.isAbsolute()) {
+            readSetupFile(f);
+        } else {
+            readSetupFromResource(file,title);
+        }
+        
+        Circuit.saveCurrentFile();
+    }
 
-    void readSetupFile(String str, String title) {
+    void readSetupFromResource(String str, String title) {
 	t = 0;
-	System.out.println(str);
-	try {
-	    URL url = getResource("circuits/" + str);
-	    ByteArrayOutputStream ba = readUrlData(url);
-	    readSetup(ba.toByteArray(), ba.size(), false);
+	System.out.println("readSetupFromResource("+str+","+title+")");
+        try {
+            URL url;
+            url = getResource("circuits/" + str);
+            ByteArrayOutputStream ba = readUrlData(url);
+            readSetup(ba.toByteArray(), ba.size(), false);
+            currentFile = str;
+            titleLabel.setText(title);
 	} catch (Exception e) {
+            currentFile = null;
+            titleLabel.setText("Unknown");
 	    e.printStackTrace();
 	    stop("Unable to read " + str + "!", null);
 	}
-	titleLabel.setText(title);
     }
 
+    boolean firstCircuit = true;
+    
     void readSetup(byte b[], int len, boolean retain) {
 	int i;
 	if (!retain) {
@@ -2487,6 +2508,7 @@ public class CirSim extends Frame
 	needAnalyze();
         
         loadedCircuit = dumpCircuit();
+        firstCircuit = false;
     }
     
 

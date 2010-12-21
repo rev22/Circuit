@@ -34,7 +34,7 @@
         <string>Circuit Simulator File</string>
         <key>CFBundleTypeOSTypes</key>
            <array>
-             <string>circ</string>
+             <string>c1RT</string>
            </array>
         <key>CFBundleTypeRole</key>
         <string>Editor</string>
