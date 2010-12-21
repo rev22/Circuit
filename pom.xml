@@ -17,7 +17,19 @@
         <url>https://github.com/xylifyx/Circuit</url>
     </scm>
 
-    
+    <distributionManagement>
+        <repository>
+            <id>releases</id>
+            <name>Dropbox Releases</name>
+            <url>file:///Users/ermh/Dropbox/Public/releases</url>
+        </repository>
+        <snapshotRepository>
+            <id>snapshots</id>
+            <name>Snapshot Releases</name>
+            <url>file:///Users/ermh/Dropbox/Public/snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
+
     <build>
         <plugins>
             <plugin>
