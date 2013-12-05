@@ -2,64 +2,26 @@
 
 // For information about the theory behind this, see Electronic Circuit & System Simulation Methods by Pillage
 
-import java.awt.Button;
-import java.awt.Checkbox;
-import java.awt.CheckboxMenuItem;
-import java.awt.Color;
-import java.awt.Container;
-import java.awt.Dimension;
-import java.awt.Event;
-import java.awt.FileDialog;
-import java.awt.Font;
-import java.awt.Frame;
-import java.awt.Graphics;
-import java.awt.Image;
-import java.awt.Label;
-import java.awt.Menu;
-import java.awt.MenuBar;
-import java.awt.MenuItem;
-import java.awt.MenuShortcut;
-import java.awt.Point;
-import java.awt.PopupMenu;
-import java.awt.Rectangle;
-import java.awt.Scrollbar;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.AdjustmentEvent;
-import java.awt.event.AdjustmentListener;
-import java.awt.event.ComponentEvent;
-import java.awt.event.ComponentListener;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.awt.event.MouseMotionListener;
+import java.io.InputStream;
+import java.awt.*;
+import java.awt.image.*;
+import java.applet.Applet;
+import java.util.Vector;
 import java.io.File;
-import java.net.MalformedURLException;
 import java.util.Random;
+import java.util.Arrays;
+import java.lang.Math;
 import java.net.URL;
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
+import java.awt.event.*;
 import java.io.FilterInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.util.StringTokenizer;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
-import java.nio.charset.Charset;
-import java.util.Vector;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.swing.JFrame;
 
 public class CirSim extends Frame
   implements ComponentListener, ActionListener, AdjustmentListener,
@@ -82,7 +44,6 @@ public class CirSim extends Frame
     Label titleLabel;
     Button resetButton;
     Button dumpMatrixButton;
-    MenuItem newItem, loadItem, saveItem, saveAsItem;
     MenuItem exportItem, exportLinkItem, importItem, exitItem, undoItem, redoItem,
 	cutItem, copyItem, pasteItem, selectAllItem, optionsItem;
     Menu optionsMenu;
@@ -161,9 +122,10 @@ public class CirSim extends Frame
     static final int HINT_3DB_C = 3;
     static final int HINT_TWINT = 4;
     static final int HINT_3DB_L = 5;
-    Vector elmList;
-    Vector setupList;
+    Vector<CircuitElm> elmList;
+//    Vector setupList;
     CircuitElm dragElm, menuElm, mouseElm, stopElm;
+    boolean didSwitch = false;
     int mousePost = -1;
     CircuitElm plotXElm, plotYElm;
     int draggingPost;
@@ -181,16 +143,14 @@ public class CirSim extends Frame
     Scope scopes[];
     int scopeColCount[];
     static EditDialog editDialog;
-    static ImportDialog impDialog;
-    Class dumpTypes[];
+    static ImportExportDialog impDialog, expDialog;
+    Class dumpTypes[], shortcuts[];
     static String muString = "u";
     static String ohmString = "ohm";
     String clipboard;
     Rectangle circuitArea;
     int circuitBottom;
-    Vector undoStack, redoStack;
-    String currentFile;
-    String loadedCircuit;
+    Vector<String> undoStack, redoStack;
 
     int getrand(int x) {
 	int q = random.nextInt();
@@ -201,7 +161,7 @@ public class CirSim extends Frame
     Circuit applet;
 
     CirSim(Circuit a) {
-	super("Circuit Simulator v1.5n");
+	super("Circuit Simulator v1.6");
 	applet = a;
 	useFrame = false;
     }
@@ -273,6 +233,8 @@ public class CirSim extends Frame
 	}
 	
 	dumpTypes = new Class[300];
+	shortcuts = new Class[127];
+
 	// these characters are reserved
 	dumpTypes[(int)'o'] = Scope.class;
 	dumpTypes[(int)'h'] = Scope.class;
@@ -298,22 +260,12 @@ public class CirSim extends Frame
 	    mb.add(m);
 	else
 	    mainMenu.add(m);
-        
-        m.add(newItem = getMenuItem("New"));
-        newItem.setShortcut(new MenuShortcut(KeyEvent.VK_N,false));
-        m.add(loadItem = getMenuItem("Open ..."));
-        loadItem.setShortcut(new MenuShortcut(KeyEvent.VK_O,false));
-        m.add(saveItem = getMenuItem("Save"));
-        saveItem.setShortcut(new MenuShortcut(KeyEvent.VK_S,false));
-        m.add(saveAsItem = getMenuItem("Save As ..."));
-	m.addSeparator();
 	m.add(importItem = getMenuItem("Import"));
 	m.add(exportItem = getMenuItem("Export"));
 	m.add(exportLinkItem = getMenuItem("Export Link"));
 	m.addSeparator();
 	m.add(exitItem   = getMenuItem("Exit"));
-        exitItem.setShortcut(new MenuShortcut(KeyEvent.VK_Q,false));
-        
+
 	m = new Menu("Edit");
 	m.add(undoItem = getMenuItem("Undo"));
 	undoItem.setShortcut(new MenuShortcut(KeyEvent.VK_Z));
@@ -466,6 +418,7 @@ public class CirSim extends Frame
 	Menu otherMenu = new Menu("Other");
 	mainMenu.add(otherMenu);
 	otherMenu.add(getClassCheckItem("Add Text", "TextElm"));
+	otherMenu.add(getClassCheckItem("Add Box", "BoxElm"));
 	otherMenu.add(getClassCheckItem("Add Scope Probe", "ProbeElm"));
 	otherMenu.add(getCheckItem("Drag All (Alt-drag)", "DragAll"));
 	otherMenu.add(getCheckItem(
@@ -527,10 +480,10 @@ public class CirSim extends Frame
 	}
 
 	setGrid();
-	elmList = new Vector();
-	setupList = new Vector();
-	undoStack = new Vector();
-	redoStack = new Vector();
+	elmList = new Vector<CircuitElm>();
+//	setupList = new Vector();
+	undoStack = new Vector<String>();
+	redoStack = new Vector<String>();
 
 	scopes = new Scope[20];
 	scopeColCount = new int[20];
@@ -558,6 +511,8 @@ public class CirSim extends Frame
 	    readSetup(startCircuitText);
 	else if (stopMessage == null && startCircuit != null)
 	    readSetupFile(startCircuit, startLabel);
+	else
+	    readSetup(null, 0, false);
 
 	if (useFrame) {
 	    Dimension screen = getToolkit().getScreenSize();
@@ -577,7 +532,16 @@ public class CirSim extends Frame
 	    handleResize();
 	    applet.validate();
 	}
-	main.requestFocus();
+	requestFocus();
+
+	addWindowListener(new WindowAdapter()
+		{
+			public void windowClosing(WindowEvent we)
+			{
+				destroyFrame();
+			}
+		}
+	);
     }
 
     boolean shown = false;
@@ -586,6 +550,12 @@ public class CirSim extends Frame
 	if (!shown)
 	    show();
 	shown = true;
+    }
+
+    public void requestFocus()
+    {
+	super.requestFocus();
+	cv.requestFocus();
     }
     
     PopupMenu buildScopeMenu(boolean t) {
@@ -647,10 +617,8 @@ public class CirSim extends Frame
 	    Class c = Class.forName(t);
 	    CircuitElm elm = constructElement(c, 0, 0);
 	    register(c, elm);
-	    int dt = 0;
-	    if (elm.needsShortcut() && elm.getDumpClass() == c) {
-		dt = elm.getDumpType();
-		s += " (" + (char)dt + ")";
+	    if ( elm.needsShortcut() ) {
+		s += " (" + (char)elm.getShortcut() + ")";
 	    }
 	    elm.delete();
 	} catch (Exception ee) {
@@ -672,15 +640,44 @@ public class CirSim extends Frame
 	    System.out.println("no dump type: " + c);
 	    return;
 	}
+
+	int s = elm.getShortcut();
+	if ( elm.needsShortcut() && s == 0 )
+	{
+	    if ( s == 0 )
+	    {
+		System.err.println("no shortcut " + c + " for " + c);
+		return;
+	    }
+	    else if ( s <= ' ' || s >= 127 )
+	    {
+		System.err.println("invalid shortcut " + c + " for " + c);
+		return;
+	    }
+	}
+
 	Class dclass = elm.getDumpClass();
-	if (dumpTypes[t] == dclass)
-	    return;
-	if (dumpTypes[t] != null) {
+
+	if ( dumpTypes[t] != null && dumpTypes[t] != dclass ) {
 	    System.out.println("dump type conflict: " + c + " " +
 			       dumpTypes[t]);
 	    return;
 	}
 	dumpTypes[t] = dclass;
+
+	Class sclass = elm.getClass();
+
+	if ( elm.needsShortcut() && shortcuts[s] != null &&
+	     shortcuts[s] != sclass )
+	{
+	    System.err.println("shortcut conflict: " + c +
+	 		       " (previously assigned to " +
+			       shortcuts[s] + ")");
+	}
+	else
+	{
+	    shortcuts[s] = sclass;
+	}
     }
     
     void handleResize() {
@@ -722,25 +719,15 @@ public class CirSim extends Frame
     }
 
     void destroyFrame() {
-        if (currentFile != null && new File(currentFile).isAbsolute()) {
-            String circuit = dumpCircuit();
-            String loadedCircuit = this.loadedCircuit;
-            
-            System.out.println(circuit+"\n"+loadedCircuit);
-            
-            if (circuit.equals(loadedCircuit) == false) {
-                boolean ok = showQuestionDialog(this, "Do you want to save the changes?", "Save?");
-
-                if (ok) {
-                    doSave();
-                }
-            }
-        }
-        
 	if (applet == null)
+	{
 	    dispose();
+	    System.exit(0);
+	}
 	else
+	{
 	    applet.destroyFrame();
+	}
     }
     
     public boolean handleEvent(Event ev) {
@@ -775,13 +762,15 @@ public class CirSim extends Frame
 	if (mouseElm == null)
 	    mouseElm = stopElm;
 	setupScopes();
-        Graphics g = null;
-	g = dbimage.getGraphics();
+        Graphics2D g = null; // hausen: changed to Graphics2D
+	g = (Graphics2D)dbimage.getGraphics();
+	g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+		RenderingHints.VALUE_ANTIALIAS_ON);
 	CircuitElm.selectColor = Color.cyan;
 	if (printableCheckItem.getState()) {
-	    CircuitElm.whiteColor = Color.black;
-	    CircuitElm.lightGrayColor = Color.black;
-	    g.setColor(Color.white);
+  	    CircuitElm.whiteColor = Color.black;
+  	    CircuitElm.lightGrayColor = Color.black;
+  	    g.setColor(Color.white);
 	} else {
 	    CircuitElm.whiteColor = Color.white;
 	    CircuitElm.lightGrayColor = Color.lightGray;
@@ -837,17 +826,22 @@ public class CirSim extends Frame
 	int badnodes = 0;
 	// find bad connections, nodes not connected to other elements which
 	// intersect other elements' bounding boxes
-        int nls = nodeList != null ? nodeList.size() : 0;
-        for (i = 0; i != nls; i++) {
+	// debugged by hausen: nullPointerException
+	if ( nodeList != null )
+	for (i = 0; i != nodeList.size(); i++) {
 	    CircuitNode cn = getCircuitNode(i);
 	    if (!cn.internal && cn.links.size() == 1) {
 		int bb = 0, j;
-		CircuitNodeLink cnl = (CircuitNodeLink)
-		    cn.links.elementAt(0);
+		CircuitNodeLink cnl = cn.links.elementAt(0);
 		for (j = 0; j != elmList.size(); j++)
-		    if (cnl.elm != getElm(j) &&
+		{ // TODO: (hausen) see if this change does not break stuff
+		    CircuitElm ce = getElm(j);
+		    if ( ce instanceof GraphicElm )
+			continue;
+		    if (cnl.elm != ce &&
 			getElm(j).boundingBox.contains(cn.x, cn.y))
 			bb++;
+		}
 		if (bb > 0) {
 		    g.setColor(Color.red);
 		    g.fillOval(cn.x-3, cn.y-3, 7, 7);
@@ -938,7 +932,7 @@ public class CirSim extends Frame
 
 	realg.drawImage(dbimage, 0, 0, this);
 	if (!stoppedCheck.getState() && circuitMatrix != null) {
-	    // Limit to 50 fps (thanks to J�rgen Kl�tzer for this)
+	    // Limit to 50 fps (thanks to Jurgen Klotzer for this)
 	    long delay = 1000/50 - (System.currentTimeMillis() - lastFrameTime);
 	    //realg.drawString("delay: " + delay,  10, 90);
 	    if (delay > 0) {
@@ -1095,19 +1089,19 @@ public class CirSim extends Frame
 	cv.repaint();
     }
     
-    Vector nodeList;
+    Vector<CircuitNode> nodeList;
     CircuitElm voltageSources[];
 
     public CircuitNode getCircuitNode(int n) {
 	if (n >= nodeList.size())
 	    return null;
-	return (CircuitNode) nodeList.elementAt(n);
+	return nodeList.elementAt(n);
     }
 
     public CircuitElm getElm(int n) {
 	if (n >= elmList.size())
 	    return null;
-	return (CircuitElm) elmList.elementAt(n);
+	return elmList.elementAt(n);
     }
     
     void analyzeCircuit() {
@@ -1118,7 +1112,7 @@ public class CirSim extends Frame
 	stopElm = null;
 	int i, j;
 	int vscount = 0;
-	nodeList = new Vector();
+	nodeList = new Vector<CircuitNode>();
 	boolean gotGround = false;
 	boolean gotRail = false;
 	CircuitElm volt = null;
@@ -1551,53 +1545,6 @@ public class CirSim extends Frame
 		circuitBottom = bottom;
 	}
     }
-
-    private String readFully(File file) {
-        FileInputStream fin = null;
-        try {
-            fin = new FileInputStream(file);
-            BufferedReader br = new BufferedReader(new InputStreamReader(fin, "UTF-8"));
-            StringBuilder sb = new StringBuilder();
-            for(int n = br.read(); n >= 0; n = br.read()) {
-                sb.append((char)n);
-            }
-            return sb.toString();
-        } catch (IOException ex) {
-            Logger.getLogger(CirSim.class.getName()).log(Level.SEVERE, null, ex);
-        } finally {
-            try {
-                fin.close();
-            } catch (IOException ex) {
-                Logger.getLogger(CirSim.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
-        return null;
-    }
-
-    void showMessageDialog(Frame frame, String message, String title) {
-        MessageDialog d = new MessageDialog(frame,message,title);
-        d.pack();
-        int w=d.getWidth(),h=d.getHeight();
-        w = Math.max(400, w);
-        h = Math.max(200,h);
-        d.setSize(w,h);
-        d.setLocationByPlatform(true);
-        d.setVisible(true);
-    }
-    
-    boolean showQuestionDialog(Frame frame, String message, String title) {
-        QuestionDialog d = new QuestionDialog(frame,message,title);
-        d.pack();
-        int w=d.getWidth(),h=d.getHeight();
-        w = Math.max(400, w);
-        h = Math.max(200,h);
-        d.setSize(w,h);
-        d.setLocationByPlatform(true);
-        d.setVisible(true);
-        
-        return d.action.equals("OK");
-    }
-    
     
     class FindPathInfo {
 	static final int INDUCT  = 1;
@@ -1993,22 +1940,14 @@ public class CirSim extends Frame
 	}
 	if (e.getSource() == dumpMatrixButton)
 	    dumpMatrix = true;
-	if (e.getSource() == newItem)
-	    doNew();
-	if (e.getSource() == loadItem)
-	    doLoad();
-	if (e.getSource() == saveItem)
-	    doSave();
-	if (e.getSource() == saveAsItem)
-	    doSaveAs();
 	if (e.getSource() == exportItem)
-	    doImport(false, false);
+	    doExport(false);
 	if (e.getSource() == optionsItem)
 	    doEdit(new EditOptions(this));
 	if (e.getSource() == importItem)
-	    doImport(true, false);
+	    doImport();
 	if (e.getSource() == exportLinkItem)
-	    doImport(false, true);
+	    doExport(true);
 	if (e.getSource() == undoItem)
 	    doUndo();
 	if (e.getSource() == redoItem)
@@ -2035,9 +1974,8 @@ public class CirSim extends Frame
 	    stackAll();
 	if (ac.compareTo("unstackAll") == 0)
 	    unstackAll();
-	if (e.getSource() == elmEditMenuItem) {
-            doEdit((Editable) menuElm);
-        }
+	if (e.getSource() == elmEditMenuItem)
+	    doEdit(menuElm);
 	if (ac.compareTo("Delete") == 0) {
 	    if (e.getSource() != elmDeleteMenuItem)
 		menuElm = null;
@@ -2138,91 +2076,30 @@ public class CirSim extends Frame
 	editDialog = new EditDialog(eable, this);
 	editDialog.show();
     }
-    
-    void doNew() {
-        readSetupFile("blank.txt", "Untitled");
-    }
-    
-    void doLoad() {
-        FileDialog fd = new FileDialog(this, "Load Circuit File ...");
-        fd.setFilenameFilter(new FilenameFilter() {
-            public boolean accept(File dir, String name) {
-                return name.toLowerCase().endsWith(".txt") || name.toLowerCase().endsWith(".circuit");
-            }
-        });
-        fd.setVisible(true);
-        String nameName = fd.getFile();
-        if(nameName != null){
-            File file = new File(new File(fd.getDirectory()),fd.getFile());
-            if (file.exists()) {
-                readSetupFile(file);
-            } else {
-                showMessageDialog(this,"File Not Found: "+file, "Error");
-            }
-        }
-    }
-    
-    void doSave() {
-        FileOutputStream fos = null;
-        try {
-            if (currentFile == null) {
-                doSaveAs();
-                return;
-            }
-            String curcuit = dumpCircuit();
-            fos = new FileOutputStream(currentFile);
-            Writer w = new OutputStreamWriter(new BufferedOutputStream(fos),
-                    Charset.forName("UTF-8"));
-            w.write(curcuit);
-            w.close();
-        } catch (IOException ex) {
-            showMessageDialog(this, ex.getMessage(), "Exception");
-            Logger.getLogger(CirSim.class.getName()).log(Level.SEVERE, null, ex);
-        } finally {
-            try {
-                if (fos != null)
-                    fos.close();
-            } catch (IOException ex) {
-                Logger.getLogger(CirSim.class.getName()).log(Level.SEVERE, null,
-                        ex);
-            }
-        }
+
+    void doImport() {
+	if (impDialog == null)
+	    impDialog = ImportExportDialogFactory.Create(this,
+		ImportExportDialog.Action.IMPORT);
+//	    impDialog = new ImportExportClipboardDialog(this,
+//		ImportExportDialog.Action.IMPORT);
+	pushUndo();
+	impDialog.execute();
     }
 
-    void doSaveAs() {
-        FileDialog fd = new FileDialog(this,"Save As ...");
-        fd.setMode(FileDialog.SAVE);
-        fd.setVisible(true);
-        String dir = fd.getDirectory();
-        String f = fd.getFile();
-        
-        if (f != null && dir != null) {
-            if (!f.endsWith(".circuit")) {
-                f += ".circuit";
-            }
-            
-            currentFile = new File(new File(dir), f).getAbsolutePath();
-            titleLabel.setText(new File(currentFile).getName());
-            Circuit.saveCurrentFile();
-            
-            doSave();
-        } else {
-            showMessageDialog(this, "File not saved", "Warning");   
-        }
-    }
-    
-    void doImport(boolean imp, boolean url) {
-	if (impDialog != null) {
-	    requestFocus();
-	    impDialog.setVisible(false);
-	    impDialog = null;
-	}
-	String dump = (imp) ? "" : dumpCircuit();
+    void doExport(boolean url)
+    {
+    	String dump = dumpCircuit();
 	if (url)
 	    dump = baseURL + "#" + URLEncoder.encode(dump);
-	impDialog = new ImportDialog(this, dump, url);
-	impDialog.show();
-	pushUndo();
+	if (expDialog == null) {
+	    expDialog = ImportExportDialogFactory.Create(this,
+		 ImportExportDialog.Action.EXPORT);
+//	    expDialog = new ImportExportClipboardDialog(this,
+//		 ImportExportDialog.Action.EXPORT);
+	}
+        expDialog.setDump(dump);
+	expDialog.execute();
     }
     
     String dumpCircuit() {
@@ -2269,18 +2146,16 @@ public class CirSim extends Frame
 	return ba;
     }
 
-    URL getResource(String resource) throws MalformedURLException {
-        File file = new File(resource);
-        if (file.exists()) {
-            return file.toURL();
-        }
-
-        URL url = getClass().getResource("/"+resource);
-        if (url != null) {
-            return url;
-        }
-        
-        return null;
+    URL getCodeBase() {
+	try {
+	    if (applet != null)
+		return applet.getCodeBase();
+	    File f = new File(".");
+	    return new URL("file:" + f.getCanonicalPath() + "/");
+	} catch (Exception e) {
+	    e.printStackTrace();
+	    return null;
+	}
     }
     
     void getSetupList(Menu menu, boolean retry) {
@@ -2288,8 +2163,18 @@ public class CirSim extends Frame
 	int stackptr = 0;
 	stack[stackptr++] = menu;
 	try {
-	    URL url = getResource("setuplist.txt");
-	    ByteArrayOutputStream ba = readUrlData(url);
+	    // hausen: if setuplist.txt does not exist in the same
+	    // directory, try reading from the jar file
+	    ByteArrayOutputStream ba = null;
+	    try {
+		URL url = new URL(getCodeBase() + "setuplist.txt");
+		ba = readUrlData(url);
+	    } catch (Exception e) {
+		URL url = getClass().getClassLoader().getResource("setuplist.txt");
+		ba = readUrlData(url);
+	    }
+	    // /hausen
+
 	    byte b[] = ba.toByteArray();
 	    int len = ba.size();
 	    int p;
@@ -2331,9 +2216,7 @@ public class CirSim extends Frame
 		}
 		p += l;
 	    }
-        } catch (java.io.FileNotFoundException e) {
-            stop("Can't read setuplist.txt!", null);
-        } catch (Exception e) {
+	} catch (Exception e) {
 	    e.printStackTrace();
 	    stop("Can't read setuplist.txt!", null);
 	}
@@ -2345,58 +2228,29 @@ public class CirSim extends Frame
     
     void readSetup(String text, boolean retain) {
 	readSetup(text.getBytes(), text.length(), retain);
-        currentFile = null;
-	titleLabel.setText("Untitled");
-    }
-    
-    void readSetupFile(File file) {
-        t = 0;
-        System.out.println(file);
-        try {
-            URL url = file.toURL();
-            ByteArrayOutputStream ba = readUrlData(url);
-	    readSetup(ba.toByteArray(), ba.size(), false);
-            currentFile = file.getAbsolutePath();
-            titleLabel.setText(file.getName());
-            Circuit.saveCurrentFile();
-        } catch (Exception e) {
-            e.printStackTrace();
-            stop("Unable to read " + file + "!", null);
-        }
-    }
-    
-    void readSetupFile(String file, String title) {
-        URL url;
-        File f = new File(file);
-        if (f.isAbsolute()) {
-            readSetupFile(f);
-        } else {
-            readSetupFromResource(file,title);
-        }
-        
-        Circuit.saveCurrentFile();
+	titleLabel.setText("untitled");
     }
 
-    void readSetupFromResource(String str, String title) {
+    void readSetupFile(String str, String title) {
 	t = 0;
-	System.out.println("readSetupFromResource("+str+","+title+")");
-        try {
-            URL url;
-            url = getResource("circuits/" + str);
-            ByteArrayOutputStream ba = readUrlData(url);
-            readSetup(ba.toByteArray(), ba.size(), false);
-            currentFile = str;
-            titleLabel.setText(title);
-	} catch (Exception e) {
-            currentFile = null;
-            titleLabel.setText("Unknown");
-	    e.printStackTrace();
-	    stop("Unable to read " + str + "!", null);
+	System.out.println(str);
+	try {
+	    URL url = new URL(getCodeBase() + "circuits/" + str);
+	    ByteArrayOutputStream ba = readUrlData(url);
+	    readSetup(ba.toByteArray(), ba.size(), false);
+	} catch (Exception e1) {
+	    try {
+		URL url = getClass().getClassLoader().getResource("circuits/" + str);
+		ByteArrayOutputStream ba = readUrlData(url);
+		readSetup(ba.toByteArray(), ba.size(), false);
+	    } catch (Exception e) {
+		e.printStackTrace();
+		stop("Unable to read " + str + "!", null);
+	    }
 	}
+	titleLabel.setText(title);
     }
 
-    boolean firstCircuit = true;
-    
     void readSetup(byte b[], int len, boolean retain) {
 	int i;
 	if (!retain) {
@@ -2407,7 +2261,7 @@ public class CirSim extends Frame
 	    elmList.removeAllElements();
 	    hintType = -1;
 	    timeStep = 5e-6;
-	    dotsCheckItem.setState(true);
+	    dotsCheckItem.setState(false);
 	    smallGridCheckItem.setState(false);
 	    powerCheckItem.setState(false);
 	    voltsCheckItem.setState(true);
@@ -2506,11 +2360,7 @@ public class CirSim extends Frame
 	if (!retain)
 	    handleResize(); // for scopes
 	needAnalyze();
-        
-        loadedCircuit = dumpCircuit();
-        firstCircuit = false;
     }
-    
 
     void readHint(StringTokenizer st) {
 	hintType  = new Integer(st.nextToken()).intValue();
@@ -2529,7 +2379,7 @@ public class CirSim extends Frame
 	double sp = new Double(st.nextToken()).doubleValue();
 	int sp2 = (int) (Math.log(10*sp)*24+61.5);
 	//int sp2 = (int) (Math.log(sp)*24+1.5);
-	speedBar  .setValue(sp2);
+	speedBar.setValue(sp2);
 	currentBar.setValue(new Integer(st.nextToken()).intValue());
 	CircuitElm.voltageRange = new Double (st.nextToken()).doubleValue();
 	try {
@@ -2605,7 +2455,7 @@ public class CirSim extends Frame
 	}
 	dragging = true;
 	if (success) {
-	    if (tempMouseMode == MODE_DRAG_SELECTED && mouseElm instanceof TextElm) {
+	    if (tempMouseMode == MODE_DRAG_SELECTED && mouseElm instanceof GraphicElm ) {
 		dragX = e.getX(); dragY = e.getY();
 	    } else {
 		dragX = snapGrid(e.getX()); dragY = snapGrid(e.getY());
@@ -2666,7 +2516,7 @@ public class CirSim extends Frame
 	int i;
 	for (i = 0; i != elmList.size(); i++) {
 	    CircuitElm ce = getElm(i);
-	    if (ce.isSelected() && !(ce instanceof TextElm))
+	    if ( ce.isSelected() && !(ce instanceof GraphicElm) )
 		break;
 	}
 	if (i != elmList.size()) {
@@ -2842,6 +2692,8 @@ public class CirSim extends Frame
     }
 
     public void mouseClicked(MouseEvent e) {
+	if ( e.getClickCount() == 2 && !didSwitch )
+	    doEditMenu(e);
 	if ((e.getModifiers() & MouseEvent.BUTTON1_MASK) != 0) {
 	    if (mouseMode == MODE_SELECT || mouseMode == MODE_DRAG_SELECTED)
 		clearSelection();
@@ -2856,6 +2708,8 @@ public class CirSim extends Frame
     }
     
     public void mousePressed(MouseEvent e) {
+	didSwitch = false;
+
 	System.out.println(e.getModifiers());
 	int ex = e.getModifiersEx();
 	if ((ex & (MouseEvent.META_DOWN_MASK|
@@ -2893,7 +2747,11 @@ public class CirSim extends Frame
 	if (tempMouseMode != MODE_SELECT && tempMouseMode != MODE_DRAG_SELECTED)
 	    clearSelection();
 	if (doSwitch(e.getX(), e.getY()))
+	{
+            didSwitch = true;
 	    return;
+	}
+
 	pushUndo();
 	initDragX = e.getX();
 	initDragY = e.getY();
@@ -2934,7 +2792,13 @@ public class CirSim extends Frame
 	} catch (Exception ee) { ee.printStackTrace(); }
 	return null;
     }
-    
+
+    // hausen: add doEditMenu
+    void doEditMenu(MouseEvent e) {
+	if( mouseElm != null )
+	    doEdit(mouseElm);
+    }
+
     void doPopupMenu(MouseEvent e) {
 	menuElm = mouseElm;
 	menuScope = -1;
@@ -3036,22 +2900,23 @@ public class CirSim extends Frame
 	}
 	if (mi instanceof CheckboxMenuItem) {
 	    MenuItem mmi = (MenuItem) mi;
-	    mouseMode = MODE_ADD_ELM;
+	    int prevMouseMode = mouseMode;
+	    setMouseMode(MODE_ADD_ELM);
 	    String s = mmi.getActionCommand();
 	    if (s.length() > 0)
 		mouseModeStr = s;
 	    if (s.compareTo("DragAll") == 0)
-		mouseMode = MODE_DRAG_ALL;
+		setMouseMode(MODE_DRAG_ALL);
 	    else if (s.compareTo("DragRow") == 0)
-		mouseMode = MODE_DRAG_ROW;
+		setMouseMode(MODE_DRAG_ROW);
 	    else if (s.compareTo("DragColumn") == 0)
-		mouseMode = MODE_DRAG_COLUMN;
+		setMouseMode(MODE_DRAG_COLUMN);
 	    else if (s.compareTo("DragSelected") == 0)
-		mouseMode = MODE_DRAG_SELECTED;
+		setMouseMode(MODE_DRAG_SELECTED);
 	    else if (s.compareTo("DragPost") == 0)
-		mouseMode = MODE_DRAG_POST;
+		setMouseMode(MODE_DRAG_POST);
 	    else if (s.compareTo("Select") == 0)
-		mouseMode = MODE_SELECT;
+		setMouseMode(MODE_SELECT);
 	    else if (s.length() > 0) {
 		try {
 		    addingClass = Class.forName(s);
@@ -3059,6 +2924,8 @@ public class CirSim extends Frame
 		    ee.printStackTrace();
 		}
 	    }
+	    else
+	    	setMouseMode(prevMouseMode);
 	    tempMouseMode = mouseMode;
 	}
     }
@@ -3072,7 +2939,8 @@ public class CirSim extends Frame
     void pushUndo() {
 	redoStack.removeAllElements();
 	String s = dumpCircuit();
-	if (undoStack.size() > 0 && s.compareTo((String) (undoStack.lastElement())) == 0)
+	if (undoStack.size() > 0 &&
+		s.compareTo(undoStack.lastElement()) == 0)
 	    return;
 	undoStack.add(s);
 	enableUndoRedo();
@@ -3082,7 +2950,7 @@ public class CirSim extends Frame
 	if (undoStack.size() == 0)
 	    return;
 	redoStack.add(dumpCircuit());
-	String s = (String) (undoStack.remove(undoStack.size()-1));
+	String s = undoStack.remove(undoStack.size()-1);
 	readSetup(s);
 	enableUndoRedo();
     }
@@ -3091,7 +2959,7 @@ public class CirSim extends Frame
 	if (redoStack.size() == 0)
 	    return;
 	undoStack.add(dumpCircuit());
-	String s = (String) (redoStack.remove(redoStack.size()-1));
+	String s = redoStack.remove(redoStack.size()-1);
 	readSetup(s);
 	enableUndoRedo();
     }
@@ -3099,6 +2967,15 @@ public class CirSim extends Frame
     void enableUndoRedo() {
 	redoItem.setEnabled(redoStack.size() > 0);
 	undoItem.setEnabled(undoStack.size() > 0);
+    }
+
+    void setMouseMode(int mode)
+    {
+	mouseMode = mode;
+	if ( mode == MODE_ADD_ELM )
+	    cv.setCursor(new Cursor(Cursor.CROSSHAIR_CURSOR));
+	else
+	    cv.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
     }
 
     void setMenuSelection() {
@@ -3131,14 +3008,33 @@ public class CirSim extends Frame
 	int i;
 	pushUndo();
 	setMenuSelection();
+	boolean hasDeleted = false;
+
 	for (i = elmList.size()-1; i >= 0; i--) {
 	    CircuitElm ce = getElm(i);
 	    if (ce.isSelected()) {
 		ce.delete();
 		elmList.removeElementAt(i);
+		hasDeleted = true;
 	    }
 	}
-	needAnalyze();
+
+	if ( !hasDeleted )
+	{
+	    for (i = elmList.size()-1; i >= 0; i--) {
+		CircuitElm ce = getElm(i);
+		if (ce == mouseElm) {
+		    ce.delete();
+		    elmList.removeElementAt(i);
+		    hasDeleted = true;
+		    mouseElm = null;
+		    break;
+		}
+	    }
+	}
+
+	if ( hasDeleted )
+	    needAnalyze();
     }
 
     void doCopy() {
@@ -3223,25 +3119,30 @@ public class CirSim extends Frame
     public void keyReleased(KeyEvent e) {}
     
     public void keyTyped(KeyEvent e) {
+	if (e.getKeyChar() == 127)
+	{
+	    doDelete();
+	    return;
+	}
 	if (e.getKeyChar() > ' ' && e.getKeyChar() < 127) {
-	    Class c = dumpTypes[e.getKeyChar()];
-	    if (c == null || c == Scope.class)
+	    Class c = shortcuts[e.getKeyChar()];
+	    if (c == null)
 		return;
 	    CircuitElm elm = null;
 	    elm = constructElement(c, 0, 0);
-	    if (elm == null || !(elm.needsShortcut() && elm.getDumpClass() == c))
+	    if (elm == null)
 		return;
-	    mouseMode = MODE_ADD_ELM;
+	    setMouseMode(MODE_ADD_ELM);
 	    mouseModeStr = c.getName();
 	    addingClass = c;
 	}
-	if (e.getKeyChar() == ' ') {
-	    mouseMode = MODE_SELECT;
+	if (e.getKeyChar() == ' ' || e.getKeyChar() == KeyEvent.VK_ESCAPE) {
+	    setMouseMode(MODE_SELECT);
 	    mouseModeStr = "Select";
 	}
 	tempMouseMode = mouseMode;
     }
-    
+
     // factors a matrix into upper and lower triangular matrices by
     // gaussian elimination.  On entry, a[0..n-1][0..n-1] is the
     // matrix to be factored.  ipvt[] returns an integer vector of pivot

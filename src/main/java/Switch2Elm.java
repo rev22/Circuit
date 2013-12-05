@@ -122,4 +122,5 @@ import java.util.StringTokenizer;
 		super.setEditValue(n, ei);
 	}
 	boolean hasCenterOff() { return (flags & FLAG_CENTER_OFF) != 0; }
+	int getShortcut() { return 'S'; }
     }

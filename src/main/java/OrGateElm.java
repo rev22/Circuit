@@ -49,4 +49,5 @@ import java.util.StringTokenizer;
 	    return f;
 	}
 	int getDumpType() { return 152; }
+	int getShortcut() { return '3'; }
     }

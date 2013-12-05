@@ -107,5 +107,5 @@ class DiodeElm extends CircuitElm {
 	fwdrop = ei.value;
 	setup();
     }
-    boolean needsShortcut() { return getClass() == DiodeElm.class; }
+    int getShortcut() { return 'd'; }
 }

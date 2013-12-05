@@ -35,5 +35,5 @@ import java.util.StringTokenizer;
 	    arr[1] = "I = " + getCurrentText(getCurrent());
 	}
 	boolean hasGroundConnection(int n1) { return true; }
-	boolean needsShortcut() { return true; }
+	int getShortcut() { return 'g'; }
     }

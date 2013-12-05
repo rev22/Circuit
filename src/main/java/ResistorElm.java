@@ -96,5 +96,5 @@ import java.util.StringTokenizer;
 	    if (ei.value > 0)
 	        resistance = ei.value;
 	}
-	boolean needsShortcut() { return true; }
+	int getShortcut() { return 'r'; }
     }

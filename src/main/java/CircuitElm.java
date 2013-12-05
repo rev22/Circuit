@@ -599,5 +599,8 @@ public abstract class CircuitElm implements Editable {
 	return Math.sqrt(x*x+y*y);
     }
     Rectangle getBoundingBox() { return boundingBox; }
-    boolean needsShortcut() { return false; }
+    boolean needsShortcut() { return getShortcut() > 0; }
+    int getShortcut() { return 0; }
+
+    boolean isGraphicElmt() { return false; }
 }

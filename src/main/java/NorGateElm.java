@@ -10,4 +10,5 @@ import java.util.StringTokenizer;
 	String getGateName() { return "NOR gate"; }
 	boolean isInverting() { return true; }
 	int getDumpType() { return 153; }
+	int getShortcut() { return '#'; }
     }

@@ -23,4 +23,5 @@ import java.util.StringTokenizer;
 		   Math.sin(2*pi*sim.t*2433)*(1.3+Math.sin(2*pi*sim.t*14))*3 + fm;
 	}
 	int getDumpType() { return 'A'; }
+	int getShortcut() { return 0; }
     }

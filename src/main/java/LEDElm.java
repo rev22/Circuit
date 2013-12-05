@@ -90,4 +90,5 @@ import java.util.StringTokenizer;
 	    if (n == 3)
 		colorB = ei.value;
 	}
+	int getShortcut() { return 'l'; }
     }

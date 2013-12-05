@@ -107,4 +107,5 @@ class SwitchElm extends CircuitElm {
 	if (n == 0)
 	    momentary = ei.checkbox.getState();
     }
+    int getShortcut() { return 's'; }
 }

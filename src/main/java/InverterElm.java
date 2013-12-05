@@ -80,4 +80,5 @@ import java.util.StringTokenizer;
 	boolean hasGroundConnection(int n1) {
 	    return (n1 == 1);
 	}
+	int getShortcut() { return '1'; }
     }

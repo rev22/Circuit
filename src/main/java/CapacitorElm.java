@@ -133,5 +133,5 @@ import java.util.StringTokenizer;
 		    flags |= FLAG_BACK_EULER;
 	    }
 	}
-	boolean needsShortcut() { return true; }
+	int getShortcut() { return 'c'; }
     }

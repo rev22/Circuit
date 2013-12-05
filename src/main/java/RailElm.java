@@ -57,4 +57,5 @@ class RailElm extends VoltageElm {
 	    sim.updateVoltageSource(0, nodes[0], voltSource, getVoltage());
     }
     boolean hasGroundConnection(int n1) { return true; }
+    int getShortcut() { return 'V'; }
 }

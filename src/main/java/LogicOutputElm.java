@@ -86,4 +86,5 @@ import java.util.StringTokenizer;
 		    flags &= ~FLAG_PULLDOWN;
 	    }
 	}
+	int getShortcut() { return 'o'; }
     }

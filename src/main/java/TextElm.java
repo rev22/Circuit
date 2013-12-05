@@ -2,16 +2,16 @@ import java.awt.*;
 import java.util.StringTokenizer;
 import java.util.Vector;
 
-class TextElm extends CircuitElm {
+class TextElm extends GraphicElm {
     String text;
-    Vector lines;
+    Vector<String> lines;
     int size;
     final int FLAG_CENTER = 1;
     final int FLAG_BAR = 2;
     public TextElm(int xx, int yy) {
 	super(xx, yy);
 	text = "hello";
-	lines = new Vector();
+	lines = new Vector<String>();
 	lines.add(text);
 	size = 24;
     }
@@ -26,7 +26,7 @@ class TextElm extends CircuitElm {
     }
     void split() {
 	int i;
-	lines = new Vector();
+	lines = new Vector<String>();
 	StringBuffer sb = new StringBuffer(text);
 	for (i = 0; i < sb.length(); i++) {
 	    char c = sb.charAt(i);
@@ -54,6 +54,9 @@ class TextElm extends CircuitElm {
 	y2 = yy;
     }
     void draw(Graphics g) {
+	//Graphics2D g2 = (Graphics2D)g;
+	//g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+	//	RenderingHints.VALUE_ANTIALIAS_ON);
 	g.setColor(needsHighlight() ? selectColor : lightGrayColor);
 	Font f = new Font("SansSerif", 0, size);
 	g.setFont(f);
@@ -129,6 +132,7 @@ class TextElm extends CircuitElm {
     void getInfo(String arr[]) {
 	arr[0] = text;
     }
-    int getPostCount() { return 0; }
+    @Override
+    int getShortcut() { return 't'; }
 }
 

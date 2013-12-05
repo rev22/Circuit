@@ -60,4 +60,5 @@ import java.util.StringTokenizer;
 		label.setText(sliderText);
 	    }
 	}
+	int getShortcut() { return 0; }
     }

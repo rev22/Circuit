@@ -105,6 +105,5 @@ class DiacElm extends CircuitElm {
 	if (ei.value > 0 && n == 3)
 	    holdcurrent = ei.value;
     }
-    boolean needsShortcut() { return false; }
 }
 

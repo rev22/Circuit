@@ -16,4 +16,5 @@ import java.util.StringTokenizer;
 	    return f;
 	}
 	int getDumpType() { return 154; }
+	int getShortcut() { return '4'; }
     }

@@ -62,6 +62,14 @@ class EditDialog extends Dialog implements AdjustmentListener, ActionListener, I
 	Dimension d = getSize();
 	setLocation(x.x + (cframe.winSize.width-d.width)/2,
 		    x.y + (cframe.winSize.height-d.height)/2);
+	addWindowListener(new WindowAdapter()
+		{
+			public void windowClosing(WindowEvent we)
+			{
+				closeDialog();
+			}
+		}
+	);
     }
 
     String unitString(EditInfo ei) {
@@ -149,9 +157,7 @@ class EditDialog extends Dialog implements AdjustmentListener, ActionListener, I
 	}
 	if (e.getSource() == okButton) {
 	    apply();
-	    cframe.main.requestFocus();
-	    setVisible(false);
-	    cframe.editDialog = null;
+	    closeDialog();
 	}
 	if (e.getSource() == applyButton)
 	    apply();
@@ -203,9 +209,7 @@ class EditDialog extends Dialog implements AdjustmentListener, ActionListener, I
 	
     public boolean handleEvent(Event ev) {
 	if (ev.id == Event.WINDOW_DESTROY) {
-	    cframe.main.requestFocus();
-	    setVisible(false);
-	    cframe.editDialog = null;
+	    closeDialog();
 	    return true;
 	}
 	return super.handleEvent(ev);
@@ -214,6 +218,13 @@ class EditDialog extends Dialog implements AdjustmentListener, ActionListener, I
     void setBar(EditInfo ei) {
 	int x = (int) (barmax*(ei.value-ei.minval)/(ei.maxval-ei.minval));
 	ei.bar.setValue(x);
+    }
+
+    protected void closeDialog()
+    {
+	cframe.main.requestFocus();
+	setVisible(false);
+	cframe.editDialog = null;
     }
 }
 

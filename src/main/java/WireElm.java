@@ -69,5 +69,5 @@ import java.util.StringTokenizer;
 		    flags &= ~FLAG_SHOWVOLTAGE;
 	    }
 	}
-	boolean needsShortcut() { return true; }
+        int getShortcut() { return 'w'; }
     }

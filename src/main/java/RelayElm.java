@@ -305,5 +305,6 @@ class RelayElm extends CircuitElm {
     boolean getConnection(int n1, int n2) {
 	return (n1 / 3 == n2 / 3);
     }
+    int getShortcut() { return 'R'; }
 }
     

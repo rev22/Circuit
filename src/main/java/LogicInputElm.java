@@ -87,4 +87,5 @@ import java.util.StringTokenizer;
 	    if (n == 2)
 		loV = ei.value;
 	}
+	int getShortcut() { return 'i'; }
     }
