@@ -45,5 +45,5 @@ Bulding + running
 
     javac -Xlint:unchecked -Xlint:deprecation src/main/java/*.java
     
-    java  -cp src/main/java/ Circuit
+    ( cd src/main/resources && java -cp src/main/java/ Circuit )
 
