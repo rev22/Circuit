@@ -14,8 +14,8 @@ are load and save of circuit files.
 
 See http://www.falstad.com/circuit/ for the original.
 
-HOWTO Build
-===========
+Building
+--------
 
 Netbeans, works out of the box
 
@@ -36,4 +36,14 @@ Package
 If you build it on a mac, it will create a mac app bundle as well.
 
 Erik Martino <erik.martino@gmail.com>
+
+
+Bulding + running
+-----------------
+
+(alternate instructions by Michele Bini)
+
+    javac -Xlint:unchecked -Xlint:deprecation src/main/java/*.java
+    
+    java  -cp src/main/java/ Circuit
 
